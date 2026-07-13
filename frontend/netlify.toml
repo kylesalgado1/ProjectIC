@@ -1,0 +1,29 @@
+# Netlify build settings for the frontend ("IC Manager") app.
+#
+# In the Netlify UI when you connect this repo, set:
+#   Base directory:    frontend
+#
+# NOTE: This app calls your Python backend (the /locations API). Netlify hosts the
+# static site only, not the backend, so data won't load until the backend is hosted
+# somewhere public. Once it is, uncomment the proxy below and fill in the URL.
+
+[build]
+  command = "npm run build"   # runs: tsc && vite build
+  publish = "dist"            # relative to the base directory -> frontend/dist
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# --- Backend proxy: uncomment and set your backend URL once it is hosted. ---
+# Keep this ABOVE the SPA fallback so API calls aren't swallowed by it.
+# [[redirects]]
+#   from = "/locations/*"
+#   to = "https://YOUR-BACKEND-URL/locations/:splat"
+#   status = 200
+#   force = true
+
+# Single-page-app fallback: serve index.html for any unknown path.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

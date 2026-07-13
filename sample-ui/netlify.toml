@@ -1,0 +1,18 @@
+# Netlify build settings for the sample-ui ("I See") app.
+#
+# In the Netlify UI when you connect this repo, set:
+#   Base directory:    sample-ui
+# Netlify then reads this file and rebuilds + publishes automatically on every push.
+
+[build]
+  command = "npm run build"   # runs: tsc && vite build
+  publish = "dist"            # relative to the base directory -> sample-ui/dist
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Single-page-app fallback: serve index.html for any unknown path.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

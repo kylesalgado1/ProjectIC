@@ -1,0 +1,490 @@
+import { useEffect, useRef, useState } from 'react';
+import {
+  askLocation,
+  fetchActivePromos,
+  fetchLocations,
+  fetchPackages,
+  fetchRooms,
+  setPackageActive,
+  setPromoActive,
+} from './api';
+import type { Location, ResolvedPackage, ResolvedPromo, Resource } from './types';
+import './styles.css';
+
+type Status = 'loading' | 'error' | 'ready';
+type AskStatus = 'idle' | 'pending' | 'answered' | 'error';
+
+const DEFAULT_GROUP_SIZE = '20';
+
+function parseGroupSize(value: string): number | null {
+  const trimmed = value.trim();
+  if (!/^\d+$/.test(trimmed)) {
+    return null;
+  }
+  const parsed = Number(trimmed);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    return null;
+  }
+  return parsed;
+}
+
+function formatPrice(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
+export default function App() {
+  const [status, setStatus] = useState<Status>('loading');
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [locationsReloadKey, setLocationsReloadKey] = useState(0);
+  const [reloadingLocations, setReloadingLocations] = useState(false);
+
+  const [packagesStatus, setPackagesStatus] = useState<Status>('loading');
+  const [packages, setPackages] = useState<ResolvedPackage[]>([]);
+  const [packagesReloadKey, setPackagesReloadKey] = useState(0);
+  const [savingPackageId, setSavingPackageId] = useState<number | null>(null);
+  const [packageSaveError, setPackageSaveError] = useState(false);
+
+  const [promosStatus, setPromosStatus] = useState<Status>('loading');
+  const [promos, setPromos] = useState<ResolvedPromo[]>([]);
+  const [promosReloadKey, setPromosReloadKey] = useState(0);
+  const [savingPromoId, setSavingPromoId] = useState<number | null>(null);
+  const [promoSaveError, setPromoSaveError] = useState(false);
+
+  const [roomsStatus, setRoomsStatus] = useState<Status>('loading');
+  const [rooms, setRooms] = useState<Resource[]>([]);
+  const [groupSizeText, setGroupSizeText] = useState(DEFAULT_GROUP_SIZE);
+  const groupSizeByLocation = useRef<Map<number, string>>(new Map());
+
+  const [question, setQuestion] = useState('');
+  const [askStatus, setAskStatus] = useState<AskStatus>('idle');
+  const [answer, setAnswer] = useState<string | null>(null);
+  const chatGeneration = useRef(0);
+
+  useEffect(() => {
+    chatGeneration.current += 1;
+  }, [selectedId]);
+
+  useEffect(() => {
+    let active = true;
+    const initial = locationsReloadKey === 0;
+    if (initial) {
+      setStatus('loading');
+    } else {
+      setReloadingLocations(true);
+    }
+    fetchLocations()
+      .then((result) => {
+        if (!active) {
+          return;
+        }
+        setLocations(result);
+        setSelectedId((previous) =>
+          previous !== null && !result.some((location) => location.id === previous)
+            ? null
+            : previous,
+        );
+        setStatus('ready');
+        setReloadingLocations(false);
+      })
+      .catch(() => {
+        if (!active) {
+          return;
+        }
+        if (initial) {
+          setStatus('error');
+        }
+        setReloadingLocations(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [locationsReloadKey]);
+
+  useEffect(() => {
+    if (selectedId === null) {
+      return;
+    }
+    let active = true;
+    setPackagesStatus('loading');
+    fetchPackages(selectedId)
+      .then((result) => {
+        if (!active) {
+          return;
+        }
+        setPackages(result);
+        setPackagesStatus('ready');
+      })
+      .catch(() => {
+        if (!active) {
+          return;
+        }
+        setPackagesStatus('error');
+      });
+    return () => {
+      active = false;
+    };
+  }, [selectedId, packagesReloadKey]);
+
+  useEffect(() => {
+    if (selectedId === null) {
+      return;
+    }
+    let active = true;
+    setPromosStatus('loading');
+    fetchActivePromos(selectedId)
+      .then((result) => {
+        if (!active) {
+          return;
+        }
+        setPromos(result);
+        setPromosStatus('ready');
+      })
+      .catch(() => {
+        if (!active) {
+          return;
+        }
+        setPromosStatus('error');
+      });
+    return () => {
+      active = false;
+    };
+  }, [selectedId, promosReloadKey]);
+
+  const groupSize = parseGroupSize(groupSizeText);
+
+  useEffect(() => {
+    if (selectedId === null || groupSize === null) {
+      return;
+    }
+    let active = true;
+    setRoomsStatus('loading');
+    fetchRooms(selectedId, groupSize)
+      .then((result) => {
+        if (!active) {
+          return;
+        }
+        setRooms(result);
+        setRoomsStatus('ready');
+      })
+      .catch(() => {
+        if (!active) {
+          return;
+        }
+        setRoomsStatus('error');
+      });
+    return () => {
+      active = false;
+    };
+  }, [selectedId, groupSize]);
+
+  const selected = locations.find((location) => location.id === selectedId) ?? null;
+  const trimmedQuestion = question.trim();
+  const askDisabled =
+    selected === null || trimmedQuestion.length === 0 || askStatus === 'pending';
+  const locationsInitialLoading = status === 'loading';
+
+  function selectLocation(id: number) {
+    if (id === selectedId) {
+      return;
+    }
+    setSelectedId(id);
+    setGroupSizeText(groupSizeByLocation.current.get(id) ?? DEFAULT_GROUP_SIZE);
+    setPackagesStatus('loading');
+    setPromosStatus('loading');
+    setRoomsStatus('loading');
+    setPackageSaveError(false);
+    setPromoSaveError(false);
+    setSavingPackageId(null);
+    setSavingPromoId(null);
+    setQuestion('');
+    setAskStatus('idle');
+    setAnswer(null);
+  }
+
+  function reloadLocations() {
+    if (reloadingLocations) {
+      return;
+    }
+    setLocationsReloadKey((key) => key + 1);
+  }
+
+  function handleGroupSizeChange(value: string) {
+    setGroupSizeText(value);
+    if (selectedId !== null) {
+      groupSizeByLocation.current.set(selectedId, value);
+    }
+  }
+
+  function handlePackageToggle(packageId: number, isActive: boolean) {
+    if (selectedId === null || savingPackageId !== null) {
+      return;
+    }
+    const locationId = selectedId;
+    setSavingPackageId(packageId);
+    setPackageSaveError(false);
+    setPackageActive(locationId, packageId, isActive)
+      .then(() => {
+        setSavingPackageId(null);
+        setPackageSaveError(false);
+        setPackagesReloadKey((key) => key + 1);
+      })
+      .catch(() => {
+        setSavingPackageId(null);
+        setPackageSaveError(true);
+      });
+  }
+
+  function handlePromoToggle(promoId: number, isActive: boolean) {
+    if (selectedId === null || savingPromoId !== null) {
+      return;
+    }
+    const locationId = selectedId;
+    setSavingPromoId(promoId);
+    setPromoSaveError(false);
+    setPromoActive(locationId, promoId, isActive)
+      .then(() => {
+        setSavingPromoId(null);
+        setPromoSaveError(false);
+        setPromosReloadKey((key) => key + 1);
+      })
+      .catch(() => {
+        setSavingPromoId(null);
+        setPromoSaveError(true);
+      });
+  }
+
+  function handleAsk() {
+    if (askDisabled || selected === null) {
+      return;
+    }
+    const locationId = selected.id;
+    const generation = chatGeneration.current;
+    setAskStatus('pending');
+    setAnswer(null);
+    askLocation(locationId, trimmedQuestion)
+      .then((result) => {
+        if (chatGeneration.current !== generation) {
+          return;
+        }
+        setAnswer(result.answer);
+        setAskStatus('answered');
+      })
+      .catch(() => {
+        if (chatGeneration.current !== generation) {
+          return;
+        }
+        setAskStatus('error');
+      });
+  }
+
+  return (
+    <div className="app">
+      <header className="topbar">
+        <div className="topbar__inner">
+          <span className="brand__mark" aria-hidden="true">IC</span>
+          <span>
+            <span className="brand__name" style={{ display: 'block' }}>I See</span>
+            <span className="brand__tag">Every location's truth</span>
+          </span>
+          <span className="topbar__badge">Live · real database</span>
+        </div>
+      </header>
+
+      <main className="wrap">
+        <h1 className="sr-only">IC Manager</h1>
+
+        <div className="locbar__head">
+          <span className="eyebrow">Locations</span>
+          {status === 'ready' && (
+            <button type="button" className="btn btn--ghost" onClick={reloadLocations} disabled={reloadingLocations}>
+              Refresh locations
+            </button>
+          )}
+        </div>
+
+        {status === 'loading' && <p className="loading">Loading locations…</p>}
+        {status === 'error' && <p className="alert" role="alert">Could not load locations.</p>}
+        {status === 'ready' && locations.length === 0 && <p className="muted">No locations found.</p>}
+        {status === 'ready' && locations.length > 0 && (
+          <ul className="loclist">
+            {locations.map((location) => (
+              <li key={location.id}>
+                <button
+                  type="button"
+                  className="locbtn"
+                  aria-pressed={location.id === selectedId}
+                  disabled={locationsInitialLoading}
+                  onClick={() => selectLocation(location.id)}
+                >
+                  <span className="locbtn__name">{location.name}</span>
+                  <span className="locbtn__city">{location.city}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {status === 'ready' && locations.length > 0 && selected === null && (
+          <p className="muted">Select a location to view its dashboard.</p>
+        )}
+
+        {selected !== null && (
+          <section aria-label="Location dashboard">
+            <div className="dash__head">
+              <h2>{selected.name}</h2>
+              <p>{selected.city}</p>
+            </div>
+
+            <div className="panels">
+              <div className="col">
+                <section className="panel" aria-labelledby="packages-heading">
+                  <div className="panel__head">
+                    <h3 id="packages-heading">Party Packages</h3>
+                    {packagesStatus === 'ready' && packages.length > 0 && <span className="pill">{packages.length}</span>}
+                  </div>
+                  <div className="panel__body">
+                    {packagesStatus === 'loading' && <p className="panel__note loading">Loading packages…</p>}
+                    {packagesStatus === 'error' && <p className="panel__note alert" role="alert">Could not load packages.</p>}
+                    {packagesStatus === 'ready' && packages.length === 0 && <p className="panel__note muted">No packages available.</p>}
+                    {packagesStatus === 'ready' && packages.length > 0 && (
+                      <ul className="items">
+                        {packages.map((pkg) => (
+                          <li key={pkg.id} className={`item ${pkg.is_active ? '' : 'is-off'}`}>
+                            <div className="item__main">
+                              <div className="item__name">
+                                <h4 className="item__title">{pkg.name}</h4>
+                                <span className={`badge ${pkg.is_active ? 'badge--ok' : 'badge--off'}`}>{pkg.is_active ? 'Active' : 'Inactive'}</span>
+                              </div>
+                              {pkg.description !== null && <div className="item__desc">{pkg.description}</div>}
+                            </div>
+                            <div className="item__price">{formatPrice(pkg.price_cents)}</div>
+                            <button
+                              type="button"
+                              className={`act ${pkg.is_active ? 'act--deactivate' : 'act--activate'}`}
+                              aria-label={`${pkg.is_active ? 'Deactivate' : 'Activate'} ${pkg.name}`}
+                              disabled={savingPackageId !== null}
+                              onClick={() => handlePackageToggle(pkg.id, !pkg.is_active)}
+                            >
+                              {pkg.is_active ? 'Deactivate' : 'Activate'}
+                            </button>
+                            {savingPackageId === pkg.id && <span className="saving">Saving…</span>}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {packageSaveError && <p className="panel__note alert" role="alert">Could not update the package.</p>}
+                  </div>
+                </section>
+
+                <section className="panel" aria-labelledby="promos-heading">
+                  <div className="panel__head">
+                    <h3 id="promos-heading">Active Promos</h3>
+                    {promosStatus === 'ready' && promos.length > 0 && <span className="pill">{promos.length}</span>}
+                  </div>
+                  <div className="panel__body">
+                    {promosStatus === 'loading' && <p className="panel__note loading">Loading promos…</p>}
+                    {promosStatus === 'error' && <p className="panel__note alert" role="alert">Could not load promos.</p>}
+                    {promosStatus === 'ready' && promos.length === 0 && <p className="panel__note muted">No active promos.</p>}
+                    {promosStatus === 'ready' && promos.length > 0 && (
+                      <ul className="items">
+                        {promos.map((promo) => (
+                          <li key={promo.id} className="item">
+                            <div className="item__main">
+                              <div className="item__name">
+                                <h4 className="item__title">{promo.code}</h4>
+                                <span className="badge badge--arcade">{promo.discount_percent}% off</span>
+                              </div>
+                              {promo.description !== null && <div className="item__desc">{promo.description}</div>}
+                              <div className="item__meta">Starts {promo.starts_on}{promo.ends_on !== '' ? ` · Ends ${promo.ends_on}` : ''}</div>
+                            </div>
+                            <button
+                              type="button"
+                              className="act act--deactivate"
+                              aria-label={`Deactivate ${promo.code}`}
+                              disabled={savingPromoId !== null}
+                              onClick={() => handlePromoToggle(promo.id, false)}
+                            >
+                              Deactivate
+                            </button>
+                            {savingPromoId === promo.id && <span className="saving">Saving…</span>}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {promoSaveError && <p className="panel__note alert" role="alert">Could not update the promo.</p>}
+                  </div>
+                </section>
+
+                <section className="panel" aria-labelledby="rooms-heading">
+                  <div className="panel__head"><h3 id="rooms-heading">Rooms for Group Size</h3></div>
+                  <div className="rooms-controls">
+                    <div className="field">
+                      <label htmlFor="group-size">Group size</label>
+                      <input
+                        id="group-size"
+                        type="number"
+                        min="1"
+                        value={groupSizeText}
+                        aria-invalid={groupSize === null}
+                        aria-describedby={groupSize === null ? 'group-size-error' : undefined}
+                        onChange={(event) => handleGroupSizeChange(event.target.value)}
+                      />
+                    </div>
+                  </div>
+                  {groupSize === null && (
+                    <p id="group-size-error" className="panel__note alert" role="alert">Enter a positive whole number of guests.</p>
+                  )}
+                  {groupSize !== null && roomsStatus === 'loading' && <p className="panel__note loading">Loading rooms…</p>}
+                  {groupSize !== null && roomsStatus === 'error' && <p className="panel__note alert" role="alert">Could not load rooms.</p>}
+                  {groupSize !== null && roomsStatus === 'ready' && rooms.length === 0 && <p className="panel__note muted">No rooms fit this group size.</p>}
+                  {groupSize !== null && roomsStatus === 'ready' && rooms.length > 0 && (
+                    <div className="roomgrid">
+                      {rooms.map((room) => (
+                        <div key={room.id} className="roomcard">
+                          <h4>{room.name}</h4>
+                          <p className="cap">Capacity {room.capacity}</p>
+                          <p>Size tier {room.size_tier_id}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              </div>
+
+              <div className="col">
+                <section className="panel ask" aria-labelledby="ask-heading">
+                  <div className="ask__head">
+                    <span className="ask__mark" aria-hidden="true">IC</span>
+                    <h3 id="ask-heading">Ask IC</h3>
+                  </div>
+                  <div className="ask__body">
+                    {askStatus === 'idle' && answer === null && (
+                      <p className="ask__hint">Ask about packages, active promos, or room capacity for {selected.name}.</p>
+                    )}
+                    {askStatus === 'pending' && <p className="loading">Asking IC…</p>}
+                    {askStatus === 'answered' && answer !== null && (
+                      <p className="bubble bubble--ic" aria-label="Answer">{answer}</p>
+                    )}
+                    {askStatus === 'error' && <p className="alert" role="alert">Could not get an answer.</p>}
+                  </div>
+                  <div className="ask__form">
+                    <label htmlFor="ask-question">Question</label>
+                    <textarea
+                      id="ask-question"
+                      placeholder="e.g. What packages do you offer?"
+                      value={question}
+                      onChange={(event) => setQuestion(event.target.value)}
+                    />
+                    <button type="button" className="ask__send" disabled={askDisabled} onClick={handleAsk}>
+                      Ask
+                    </button>
+                  </div>
+                </section>
+              </div>
+            </div>
+          </section>
+        )}
+      </main>
+    </div>
+  );
+}
