@@ -388,9 +388,11 @@ function TopNav({ page, setPage }: { page: Page; setPage: (p: Page) => void }) {
       <div className="wrap topbar__inner">
         <button className="brand" onClick={() => setPage('landing')} aria-label="IC home">
           <span className="brand__mark">IC</span>
-          <span className="brand__text">I See<span className="brand__tag">Every location's truth</span></span>
-        </button>
-        <nav className="topbar__nav" aria-label="Primary">
+             <span className="brand__text" style={{ textAlign: 'left' }}>
+                I See<span className="brand__tag">Every location's truth</span>
+             </span>
+           </button>
+           <nav className="topbar__nav" aria-label="Primary">
           <button className={page === 'landing' ? 'on' : ''} onClick={() => setPage('landing')}>Home</button>
           <button className={page === 'dashboard' ? 'on' : ''} onClick={() => setPage('dashboard')}>Dashboard</button>
           <button className={page === 'customer' ? 'on' : ''} onClick={() => setPage('customer')}>Customer chat</button>
