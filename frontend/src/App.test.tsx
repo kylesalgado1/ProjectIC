@@ -228,12 +228,12 @@ describe('App', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders the Ask IC section', async () => {
+  it('renders the IC Knowledge Assistant section', async () => {
     stubFetch({ locations: sampleLocations });
     render(<App />);
     await selectDowntown();
     expect(
-      await screen.findByRole('heading', { name: /ask ic/i }),
+      await screen.findByRole('heading', { name: /ic knowledge assistant/i }),
     ).toBeInTheDocument();
   });
 
@@ -411,102 +411,236 @@ describe('App rooms panel', () => {
 });
 
 describe('App chat', () => {
-  it('hides the chat form before a location is selected', async () => {
+  const chatInput = (): HTMLElement =>
+    screen.getByRole('textbox', { name: /ask a question/i });
+  const sendButton = (): HTMLElement =>
+    screen.getByRole('button', { name: /^send$/i });
+
+  it('hides the chatbot before a location is selected', async () => {
     stubFetch({ locations: sampleLocations });
     render(<App />);
     await screen.findByRole('button', { name: /downtown studio/i });
     expect(
-      screen.queryByRole('textbox', { name: /question/i }),
+      screen.queryByRole('heading', { name: /ic knowledge assistant/i }),
     ).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /^ask$/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('textbox', { name: /ask a question/i }),
+    ).not.toBeInTheDocument();
   });
 
-  it('shows the chat form after a location is selected', async () => {
+  it('shows the chatbot after a location is selected', async () => {
     stubFetch({ locations: sampleLocations });
     render(<App />);
     await selectDowntown();
-    expect(screen.getByRole('textbox', { name: /question/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^ask$/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /ic knowledge assistant/i }),
+    ).toBeInTheDocument();
+    expect(chatInput()).toBeInTheDocument();
+    expect(sendButton()).toBeInTheDocument();
   });
 
-  it('disables the Ask button when the question is empty or whitespace', async () => {
+  it('renders the assistant title', async () => {
     stubFetch({ locations: sampleLocations });
     render(<App />);
     await selectDowntown();
-    const askButton = screen.getByRole('button', { name: /^ask$/i });
-    expect(askButton).toBeDisabled();
-    fireEvent.change(screen.getByRole('textbox', { name: /question/i }), {
-      target: { value: '   ' },
-    });
-    expect(askButton).toBeDisabled();
-    fireEvent.change(screen.getByRole('textbox', { name: /question/i }), {
-      target: { value: 'Are you open on Sundays?' },
-    });
-    expect(askButton).toBeEnabled();
+    expect(
+      screen.getByRole('heading', { name: /ic knowledge assistant/i }),
+    ).toBeInTheDocument();
   });
 
-  it('disables the Ask button while the ask request is pending', async () => {
+  it('renders the assistant subtitle', async () => {
+    stubFetch({ locations: sampleLocations });
+    render(<App />);
+    await selectDowntown();
+    expect(
+      screen.getByText(/answers are generated for the selected location/i),
+    ).toBeInTheDocument();
+  });
+
+  it('renders the initial assistant greeting', async () => {
+    stubFetch({ locations: sampleLocations });
+    render(<App />);
+    await selectDowntown();
+    expect(
+      screen.getByText(/ask me about packages, promotions, or rooms/i),
+    ).toBeInTheDocument();
+  });
+
+  it('renders the suggested question buttons', async () => {
+    stubFetch({ locations: sampleLocations });
+    render(<App />);
+    await selectDowntown();
+    expect(
+      screen.getByRole('button', { name: /what packages do you offer\?/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /what promos are active\?/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /what room fits 20 people\?/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('does not send an empty message', async () => {
+    stubFetch({ locations: sampleLocations });
+    const askSpy = vi.spyOn(api, 'askLocation').mockResolvedValue({ answer: 'unused' });
+    render(<App />);
+    await selectDowntown();
+    expect(sendButton()).toBeDisabled();
+    fireEvent.keyDown(chatInput(), { key: 'Enter' });
+    expect(askSpy).not.toHaveBeenCalled();
+  });
+
+  it('does not send a whitespace-only message', async () => {
+    stubFetch({ locations: sampleLocations });
+    const askSpy = vi.spyOn(api, 'askLocation').mockResolvedValue({ answer: 'unused' });
+    render(<App />);
+    await selectDowntown();
+    fireEvent.change(chatInput(), { target: { value: '   ' } });
+    expect(sendButton()).toBeDisabled();
+    fireEvent.keyDown(chatInput(), { key: 'Enter' });
+    expect(askSpy).not.toHaveBeenCalled();
+  });
+
+  it('sends the message when Enter is pressed', async () => {
+    stubFetch({ locations: sampleLocations });
+    const askSpy = vi
+      .spyOn(api, 'askLocation')
+      .mockResolvedValue({ answer: 'Enter delivered.' });
+    render(<App />);
+    await selectDowntown();
+    fireEvent.change(chatInput(), { target: { value: 'Are you open late?' } });
+    fireEvent.keyDown(chatInput(), { key: 'Enter' });
+    await waitFor(() => expect(askSpy).toHaveBeenCalledWith(1, 'Are you open late?'));
+    expect(await screen.findByText(/enter delivered/i)).toBeInTheDocument();
+  });
+
+  it('sends the message when the send button is clicked', async () => {
+    stubFetch({ locations: sampleLocations });
+    const askSpy = vi
+      .spyOn(api, 'askLocation')
+      .mockResolvedValue({ answer: 'Button delivered.' });
+    render(<App />);
+    await selectDowntown();
+    fireEvent.change(chatInput(), { target: { value: 'Do you have parking?' } });
+    fireEvent.click(sendButton());
+    await waitFor(() => expect(askSpy).toHaveBeenCalledWith(1, 'Do you have parking?'));
+    expect(screen.getByText(/do you have parking\?/i)).toBeInTheDocument();
+    expect(await screen.findByText(/button delivered/i)).toBeInTheDocument();
+  });
+
+  it('calls askLocation with the selected location id', async () => {
+    stubFetch({ locations: sampleLocations });
+    const askSpy = vi.spyOn(api, 'askLocation').mockResolvedValue({ answer: 'ok' });
+    render(<App />);
+    await selectRiverside();
+    fireEvent.change(chatInput(), { target: { value: 'Hello there' } });
+    fireEvent.click(sendButton());
+    await waitFor(() => expect(askSpy).toHaveBeenCalledWith(2, 'Hello there'));
+  });
+
+  it('trims the question before calling askLocation', async () => {
+    stubFetch({ locations: sampleLocations });
+    const askSpy = vi.spyOn(api, 'askLocation').mockResolvedValue({ answer: 'ok' });
+    render(<App />);
+    await selectDowntown();
+    fireEvent.change(chatInput(), { target: { value: '   What are your hours?   ' } });
+    fireEvent.click(sendButton());
+    await waitFor(() =>
+      expect(askSpy).toHaveBeenCalledWith(1, 'What are your hours?'),
+    );
+  });
+
+  it('shows the typing indicator while the request is pending', async () => {
     stubFetch({ locations: sampleLocations });
     let resolveAsk!: (value: AskResponse) => void;
     const pending = new Promise<AskResponse>((resolve) => {
       resolveAsk = resolve;
     });
-    const askSpy = vi.spyOn(api, 'askLocation').mockReturnValue(pending);
+    vi.spyOn(api, 'askLocation').mockReturnValue(pending);
     render(<App />);
     await selectDowntown();
-    fireEvent.change(screen.getByRole('textbox', { name: /question/i }), {
-      target: { value: 'Hours?' },
-    });
-    const askButton = screen.getByRole('button', { name: /^ask$/i });
-    fireEvent.click(askButton);
-    await waitFor(() => expect(askButton).toBeDisabled());
-    expect(askSpy).toHaveBeenCalledTimes(1);
+    fireEvent.change(chatInput(), { target: { value: 'Hours?' } });
+    fireEvent.click(sendButton());
+    expect(await screen.findByText(/ic is typing/i)).toBeInTheDocument();
     resolveAsk({ answer: 'We open at nine.' });
-    await waitFor(() => expect(askButton).toBeEnabled());
-  });
-
-  it('calls askLocation with the selected location id and trimmed question', async () => {
-    stubFetch({ locations: sampleLocations });
-    const askSpy = vi.spyOn(api, 'askLocation').mockResolvedValue({ answer: 'Sure.' });
-    render(<App />);
-    await selectRiverside();
-    fireEvent.change(screen.getByRole('textbox', { name: /question/i }), {
-      target: { value: '   What are your hours?   ' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: /^ask$/i }));
     await waitFor(() =>
-      expect(askSpy).toHaveBeenCalledWith(2, 'What are your hours?'),
+      expect(screen.queryByText(/ic is typing/i)).not.toBeInTheDocument(),
     );
   });
 
-  it('displays the answer returned by askLocation', async () => {
+  it('disables the input while the request is pending', async () => {
+    stubFetch({ locations: sampleLocations });
+    let resolveAsk!: (value: AskResponse) => void;
+    const pending = new Promise<AskResponse>((resolve) => {
+      resolveAsk = resolve;
+    });
+    vi.spyOn(api, 'askLocation').mockReturnValue(pending);
+    render(<App />);
+    await selectDowntown();
+    fireEvent.change(chatInput(), { target: { value: 'Hours?' } });
+    fireEvent.click(sendButton());
+    await waitFor(() => expect(chatInput()).toBeDisabled());
+    resolveAsk({ answer: 'We open at nine.' });
+    await waitFor(() => expect(chatInput()).toBeEnabled());
+  });
+
+  it('disables the send button while the request is pending', async () => {
+    stubFetch({ locations: sampleLocations });
+    let resolveAsk!: (value: AskResponse) => void;
+    const pending = new Promise<AskResponse>((resolve) => {
+      resolveAsk = resolve;
+    });
+    vi.spyOn(api, 'askLocation').mockReturnValue(pending);
+    render(<App />);
+    await selectDowntown();
+    fireEvent.change(chatInput(), { target: { value: 'Hours?' } });
+    fireEvent.click(sendButton());
+    await waitFor(() => expect(sendButton()).toBeDisabled());
+    resolveAsk({ answer: 'We open at nine.' });
+    await screen.findByText(/we open at nine/i);
+  });
+
+  it('displays the answer returned by the backend', async () => {
     stubFetch({ locations: sampleLocations });
     vi.spyOn(api, 'askLocation').mockResolvedValue({
       answer: 'We offer three party packages.',
     });
     render(<App />);
     await selectDowntown();
-    fireEvent.change(screen.getByRole('textbox', { name: /question/i }), {
-      target: { value: 'What packages?' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: /^ask$/i }));
+    fireEvent.change(chatInput(), { target: { value: 'What do you have?' } });
+    fireEvent.click(sendButton());
     expect(
       await screen.findByText(/we offer three party packages/i),
     ).toBeInTheDocument();
   });
 
-  it('shows an error state when the ask request fails', async () => {
+  it('shows a friendly assistant message when the request fails', async () => {
     stubFetch({ locations: sampleLocations });
     vi.spyOn(api, 'askLocation').mockRejectedValue(new Error('boom'));
     render(<App />);
     await selectDowntown();
-    fireEvent.change(screen.getByRole('textbox', { name: /question/i }), {
-      target: { value: 'What packages?' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: /^ask$/i }));
+    fireEvent.change(chatInput(), { target: { value: 'What do you have?' } });
+    fireEvent.click(sendButton());
     expect(
-      await screen.findByText(/could not get an answer/i),
+      await screen.findByText(/i'm sorry, something went wrong\. please try again\./i),
     ).toBeInTheDocument();
+  });
+
+  it('sends a request when a suggestion button is clicked', async () => {
+    stubFetch({ locations: sampleLocations });
+    const askSpy = vi
+      .spyOn(api, 'askLocation')
+      .mockResolvedValue({ answer: 'Suggested reply.' });
+    render(<App />);
+    await selectDowntown();
+    fireEvent.click(
+      screen.getByRole('button', { name: /what room fits 20 people\?/i }),
+    );
+    await waitFor(() =>
+      expect(askSpy).toHaveBeenCalledWith(1, 'What room fits 20 people?'),
+    );
+    expect(await screen.findByText(/suggested reply/i)).toBeInTheDocument();
   });
 
   it('keeps the dashboard sections visible after asking', async () => {
@@ -516,10 +650,8 @@ describe('App chat', () => {
     });
     render(<App />);
     await selectDowntown();
-    fireEvent.change(screen.getByRole('textbox', { name: /question/i }), {
-      target: { value: 'Anything change?' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: /^ask$/i }));
+    fireEvent.change(chatInput(), { target: { value: 'Anything change?' } });
+    fireEvent.click(sendButton());
     await screen.findByText(/dashboard stays put/i);
     expect(
       screen.getByRole('heading', { name: /party packages/i }),
@@ -541,29 +673,29 @@ describe('App chat', () => {
       expect(fetchMock).toHaveBeenCalledWith('/locations/1/rooms?group_size=20'),
     );
     const before = dashboardPaths(fetchMock);
-    fireEvent.change(screen.getByRole('textbox', { name: /question/i }), {
-      target: { value: 'Anything?' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: /^ask$/i }));
+    fireEvent.change(chatInput(), { target: { value: 'Anything?' } });
+    fireEvent.click(sendButton());
     await screen.findByText(/done here/i);
     expect(dashboardPaths(fetchMock)).toEqual(before);
   });
 
-  it('clears the previous answer and error when the location changes', async () => {
+  it('clears the history and restores the greeting when the location changes', async () => {
     stubFetch({ locations: sampleLocations });
     vi.spyOn(api, 'askLocation').mockResolvedValue({
       answer: 'First location answer.',
     });
     render(<App />);
     await selectDowntown();
-    fireEvent.change(screen.getByRole('textbox', { name: /question/i }), {
-      target: { value: 'Question one' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: /^ask$/i }));
+    fireEvent.change(chatInput(), { target: { value: 'Question one' } });
+    fireEvent.click(sendButton());
     await screen.findByText(/first location answer/i);
     await selectRiverside();
     expect(screen.queryByText(/first location answer/i)).not.toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: /question/i })).toHaveValue('');
+    expect(screen.queryByText(/question one/i)).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/ask me about packages, promotions, or rooms/i),
+    ).toBeInTheDocument();
+    expect(chatInput()).toHaveValue('');
   });
 });
 
@@ -751,7 +883,7 @@ describe('App manager editing', () => {
     fireEvent.change(screen.getByRole('textbox', { name: /question/i }), {
       target: { value: 'What packages?' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /^ask$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^send$/i }));
     expect(await screen.findByText(/still chatting/i)).toBeInTheDocument();
   });
 });
@@ -936,7 +1068,7 @@ describe('App state hardening', () => {
     fireEvent.change(screen.getByRole('textbox', { name: /question/i }), {
       target: { value: 'Question one' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /^ask$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^send$/i }));
     await screen.findByText(/downtown answer/i);
     await selectRiverside();
     expect(screen.queryByText(/downtown answer/i)).not.toBeInTheDocument();
@@ -950,10 +1082,10 @@ describe('App state hardening', () => {
     fireEvent.change(screen.getByRole('textbox', { name: /question/i }), {
       target: { value: 'Question one' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /^ask$/i }));
-    expect(await screen.findByText(/could not get an answer/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /^send$/i }));
+    expect(await screen.findByText(/something went wrong/i)).toBeInTheDocument();
     await selectRiverside();
-    expect(screen.queryByText(/could not get an answer/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/something went wrong/i)).not.toBeInTheDocument();
   });
 
   it('keeps the selected location after a reload when it still exists', async () => {
@@ -1119,9 +1251,9 @@ describe('App state hardening', () => {
     fireEvent.change(screen.getByRole('textbox', { name: /question/i }), {
       target: { value: 'Downtown hours?' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /^ask$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^send$/i }));
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: /^ask$/i })).toBeDisabled(),
+      expect(screen.getByRole('button', { name: /^send$/i })).toBeDisabled(),
     );
     await selectRiverside();
     await act(async () => {
@@ -1302,7 +1434,7 @@ async function askDemoQuestion(question: string): Promise<void> {
   fireEvent.change(screen.getByRole('textbox', { name: /question/i }), {
     target: { value: question },
   });
-  fireEvent.click(screen.getByRole('button', { name: /^ask$/i }));
+  fireEvent.click(screen.getByRole('button', { name: /^send$/i }));
 }
 
 describe('App demo flow', () => {
@@ -1426,10 +1558,12 @@ describe('App demo flow', () => {
     );
     await waitFor(() => expect(packagePaths(fetchMock)).toHaveLength(2));
     await askDemoQuestion('What party packages do you offer?');
-    await waitFor(() =>
-      expect(screen.getByLabelText('Answer')).not.toHaveTextContent(/ultimate combo/i),
-    );
-    expect(screen.getByLabelText('Answer')).toHaveTextContent(/bronze/i);
+    await waitFor(() => {
+      const answers = screen.getAllByLabelText('Answer');
+      expect(answers).toHaveLength(2);
+      expect(answers[1]).not.toHaveTextContent(/ultimate combo/i);
+    });
+    expect(screen.getAllByLabelText('Answer')[1]).toHaveTextContent(/bronze/i);
   });
 
   it('updates the chat answer after a promo toggle', async () => {
@@ -1444,10 +1578,12 @@ describe('App demo flow', () => {
     );
     await waitFor(() => expect(promoPaths(fetchMock)).toHaveLength(2));
     await askDemoQuestion('Is the summer promo running?');
-    await waitFor(() =>
-      expect(screen.getByLabelText('Answer')).not.toHaveTextContent(/summer/i),
-    );
-    expect(screen.getByLabelText('Answer')).toHaveTextContent(/save10/i);
+    await waitFor(() => {
+      const answers = screen.getAllByLabelText('Answer');
+      expect(answers).toHaveLength(2);
+      expect(answers[1]).not.toHaveTextContent(/summer/i);
+    });
+    expect(screen.getAllByLabelText('Answer')[1]).toHaveTextContent(/save10/i);
   });
 
   it('shows the error state when the package toggle fails', async () => {
