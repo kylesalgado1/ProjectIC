@@ -302,3 +302,71 @@ p { margin: 0; }
   .row--pkg { grid-template-columns: 1fr auto auto; row-gap: 6px; }
   .dash__controls { flex-direction: column; align-items: stretch; width: 100%; }
 }
+
+/* ============================================================
+   App demo page — the real app's UI classes, brought over from
+   frontend/src/styles.css so the demo mirrors the product.
+   ============================================================ */
+.appdemo { padding: 32px 24px 80px; }
+.appdemo__intro { margin-bottom: 24px; max-width: 640px; }
+.appdemo__intro h1 { font-size: 26px; margin-bottom: 6px; }
+.appdemo__pick { margin-top: 16px; }
+.appdemo__head { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; margin: 30px 0 18px; }
+.appdemo__head h2 { font-size: 24px; }
+
+.locbar__head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.loclist { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.locbtn { display: flex; flex-direction: column; gap: 3px; width: 100%; text-align: left; padding: 16px 18px; background: var(--surf); border: 1px solid var(--bd); border-radius: var(--r); box-shadow: var(--sh); transition: border-color .15s ease, box-shadow .15s ease, transform .05s ease; }
+.locbtn:hover { border-color: var(--bd2); box-shadow: var(--sh-lg); }
+.locbtn:active { transform: translateY(1px); }
+.locbtn[aria-pressed="true"] { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
+.locbtn__name { font-weight: 650; font-size: 15px; color: var(--ink); }
+.locbtn__city { font-size: 13px; color: var(--sec); }
+
+.alert { color: #b42318; background: #fef3f2; border: 1px solid #fecdca; border-radius: 10px; padding: 10px 14px; font-size: 14px; }
+
+.panels { display: grid; grid-template-columns: 1.45fr 1fr; gap: 18px; align-items: start; }
+.col { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.panel__body { padding: 8px; }
+.panel__note { padding: 12px; font-size: 14px; margin: 8px; }
+
+.items { display: flex; flex-direction: column; }
+.item { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 14px 12px; border-radius: 10px; }
+.item + .item { border-top: 1px solid var(--bd); }
+.item:hover { background: var(--bg); }
+.item.is-off { opacity: .55; }
+.item__main { flex: 1 1 220px; min-width: 0; }
+.item__name { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.item__title { font-size: 15px; font-weight: 650; }
+.item__desc { margin-top: 3px; font-size: 13px; color: var(--sec); }
+.item__meta { margin-top: 4px; font-size: 12.5px; color: var(--mut); }
+.item__price { font-weight: 750; font-size: 14.5px; white-space: nowrap; }
+
+.badge { font-size: 10.5px; font-weight: 700; padding: 3px 9px; border-radius: 999px; text-transform: uppercase; letter-spacing: .04em; }
+.badge--ok { background: var(--ok-soft); color: var(--ok); }
+.badge--off { background: var(--bg); color: var(--mut); }
+.badge--arcade { background: #fdf2f8; color: #be185d; }
+
+.act { font-size: 12.5px; font-weight: 650; padding: 7px 13px; border-radius: 999px; transition: background .12s ease, color .12s ease, border-color .12s ease; }
+.act--activate { background: var(--blue); color: #fff; }
+.act--activate:hover { background: var(--blue-d); }
+.act--deactivate { background: var(--bg); color: var(--sec); border: 1px solid var(--bd2); }
+.act--deactivate:hover { background: #fdecec; color: #d64545; border-color: #f6caca; }
+
+.rooms-controls { padding: 14px 16px 2px; }
+.rooms-controls input { width: 120px; padding: 9px 12px; border: 1px solid var(--bd2); border-radius: 9px; background: var(--surf); color: var(--ink); }
+.rooms-controls input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
+.roomgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; padding: 14px 16px; }
+.roomcard { background: var(--bg); border: 1px solid var(--bd); border-radius: 12px; padding: 14px; }
+.roomcard h4 { font-size: 14.5px; }
+.roomcard .cap { font-weight: 650; margin-top: 4px; }
+.roomcard p { font-size: 13px; color: var(--sec); }
+
+.chat-panel { display: flex; flex-direction: column; height: 600px; position: sticky; top: 84px; }
+.chat-panel .panel__head { justify-content: flex-start; gap: 10px; }
+.chat-panel .panel__hint { padding: 10px 16px; }
+
+@media (max-width: 900px) {
+  .panels { grid-template-columns: 1fr; }
+  .chat-panel { position: static; height: 520px; }
+}
