@@ -6,8 +6,8 @@ INSERT INTO company (
 )
 VALUES
 (
-    'northstar',
-    'Northstar Entertainment Group'
+    'Round1',
+    'Round1 Entertainment Group'
 );
 
 INSERT INTO location (
@@ -20,21 +20,21 @@ INSERT INTO location (
 VALUES
 (
     'sf',
-    'northstar',
+    'Round1',
     'Round1 Stonestown Galleria',
     'San Francisco',
     'CA'
 ),
 (
     'roseville',
-    'northstar',
+    'Round1',
     'Round1 Roseville Galleria',
     'Roseville',
     'CA'
 ),
 (
     'concord',
-    'northstar',
+    'Round1',
     'Round1 Sunvalley Mall',
     'Concord',
     'CA'
@@ -57,7 +57,7 @@ INSERT INTO party_package (
 VALUES
 (
     'sf-pkg0',
-    'northstar',
+    'Round1',
     'sf',
     'All Inclusive Party',
     'Maximize fun and minimize cost! Experience the most of what we have to offer. We have plenty of options for everyone!',
@@ -71,7 +71,7 @@ VALUES
 ),
 (
     'sf-pkg1',
-    'northstar',
+    'Round1',
     'sf',
     'Bowling Party',
     'Strike up the fun! Spend a couple hours on the lanes and get in some good old friendly competition to see who can come out on top!',
@@ -85,7 +85,7 @@ VALUES
 ),
 (
     'sf-pkg2',
-    'northstar',
+    'Round1',
     'sf',
     'Arcade Party',
     'Get your game on! Try your luck on our various claw machines or play your heart out on racing, dancing, PCB games, and more. You can win it all!',
@@ -99,7 +99,7 @@ VALUES
 ),
 (
     'roseville-pkg0',
-    'northstar',
+    'Round1',
     'roseville',
     'All Inclusive Party',
     'Maximize fun and minimize cost! Experience the most of what we have to offer. We have plenty of options for everyone!',
@@ -113,7 +113,7 @@ VALUES
 ),
 (
     'roseville-pkg1',
-    'northstar',
+    'Round1',
     'roseville',
     'Bowling Party',
     'Strike up the fun! Spend a couple hours on the lanes and get in some good old friendly competition to see who can come out on top!',
@@ -127,7 +127,7 @@ VALUES
 ),
 (
     'roseville-pkg2',
-    'northstar',
+    'Round1',
     'roseville',
     'Arcade Party',
     'Get your game on! Try your luck on our various claw machines or play your heart out on racing, dancing, PCB games, and more. You can win it all!',
@@ -141,7 +141,7 @@ VALUES
 ),
 (
     'concord-pkg0',
-    'northstar',
+    'Round1',
     'concord',
     'All Inclusive Party',
     'Maximize fun and minimize cost! Experience the most of what we have to offer. We have plenty of options for everyone!',
@@ -155,7 +155,7 @@ VALUES
 ),
 (
     'concord-pkg1',
-    'northstar',
+    'Round1',
     'concord',
     'Bowling Party',
     'Strike up the fun! Spend a couple hours on the lanes and get in some good old friendly competition to see who can come out on top!',
@@ -169,7 +169,7 @@ VALUES
 ),
 (
     'concord-pkg2',
-    'northstar',
+    'Round1',
     'concord',
     'Arcade Party',
     'Get your game on! Try your luck on our various claw machines or play your heart out on racing, dancing, PCB games, and more. You can win it all!',
@@ -195,7 +195,7 @@ INSERT INTO promo (
 VALUES
 (
     'sf-mymelody',
-    'northstar',
+    'Round1',
     'sf',
     'My Melody Takeover',
     'Limited My Melody prize machines, photo spot & plush claw prizes.',
@@ -205,7 +205,7 @@ VALUES
 ),
 (
     'sf-miku',
-    'northstar',
+    'Round1',
     'sf',
     'Hatsune Miku Rhythm Fest',
     'Exclusive Project DIVA rhythm cabinets & tour merch.',
@@ -215,7 +215,7 @@ VALUES
 ),
 (
     'sf-cinnamoroll',
-    'northstar',
+    'Round1',
     'sf',
     'Cinnamoroll Winter Cafe',
     'Cinnamoroll claw machines, café treats & winter prizes.',
@@ -225,7 +225,7 @@ VALUES
 ),
 (
     'roseville-mymelody',
-    'northstar',
+    'Round1',
     'roseville',
     'My Melody Takeover',
     'Limited My Melody prize machines, photo spot & plush claw prizes.',
@@ -235,7 +235,7 @@ VALUES
 ),
 (
     'roseville-miku',
-    'northstar',
+    'Round1',
     'roseville',
     'Hatsune Miku Rhythm Fest',
     'Exclusive Project DIVA rhythm cabinets & tour merch.',
@@ -245,7 +245,7 @@ VALUES
 ),
 (
     'concord-mymelody',
-    'northstar',
+    'Round1',
     'concord',
     'My Melody Takeover',
     'Limited My Melody prize machines, photo spot & plush claw prizes.',
@@ -255,7 +255,7 @@ VALUES
 ),
 (
     'concord-cinnamoroll',
-    'northstar',
+    'Round1',
     'concord',
     'Cinnamoroll Winter Cafe',
     'Cinnamoroll claw machines, café treats & winter prizes.',
@@ -276,7 +276,7 @@ INSERT INTO room (
 VALUES
 (
     'sf-large',
-    'northstar',
+    'Round1',
     'sf',
     'Extra Large Room 1',
     40,
@@ -285,7 +285,7 @@ VALUES
 ),
 (
     'sf-party',
-    'northstar',
+    'Round1',
     'sf',
     'Extra Large Room 2',
     40,
@@ -294,7 +294,7 @@ VALUES
 ),
 (
     'sf-vip',
-    'northstar',
+    'Round1',
     'sf',
     'Large Room',
     30,
@@ -303,7 +303,7 @@ VALUES
 ),
 (
     'roseville-large',
-    'northstar',
+    'Round1',
     'roseville',
     'Large Room',
     50,
@@ -312,7 +312,7 @@ VALUES
 ),
 (
     'roseville-lane',
-    'northstar',
+    'Round1',
     'roseville',
     'Lane Suite',
     12,
@@ -321,7 +321,7 @@ VALUES
 ),
 (
     'concord-large',
-    'northstar',
+    'Round1',
     'concord',
     'Large Room',
     35,
@@ -330,7 +330,7 @@ VALUES
 ),
 (
     'concord-party',
-    'northstar',
+    'Round1',
     'concord',
     'Party Room',
     14,
@@ -349,7 +349,7 @@ INSERT INTO room_reservation (
 VALUES
 (
     'sf-large-r1',
-    'northstar',
+    'Round1',
     'sf',
     'sf-large',
     '2026-07-18 15:00:00',
@@ -357,7 +357,7 @@ VALUES
 ),
 (
     'sf-large-r2',
-    'northstar',
+    'Round1',
     'sf',
     'sf-large',
     '2026-07-18 18:00:00',
