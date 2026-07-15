@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import AppDemo from './AppDemo';
 
 /* ============================================================================
    I See (IC) — Sample UI (mock data only, no backend)
@@ -6,7 +7,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
    ============================================================================ */
 
 /* ---------------- Types ---------------- */
-type Page = 'landing' | 'dashboard' | 'customer';
+type Page = 'landing' | 'dashboard' | 'customer' | 'appdemo';
 
 interface Location { id: string; name: string; region: string; }
 interface Pkg { id: string; name: string; desc: string; minGuests: number; price2: number; price3: number; weekend2: number; weekend3: number; active: boolean; popular?: boolean; }
@@ -396,6 +397,7 @@ function TopNav({ page, setPage }: { page: Page; setPage: (p: Page) => void }) {
           <button className={page === 'landing' ? 'on' : ''} onClick={() => setPage('landing')}>Home</button>
           <button className={page === 'dashboard' ? 'on' : ''} onClick={() => setPage('dashboard')}>Dashboard</button>
           <button className={page === 'customer' ? 'on' : ''} onClick={() => setPage('customer')}>Customer chat</button>
+          <button className={page === 'appdemo' ? 'on' : ''} onClick={() => setPage('appdemo')}>App demo</button>
         </nav>
       </div>
     </header>
@@ -486,7 +488,7 @@ function Landing({ setPage }: { setPage: (p: Page) => void }) {
         </div>
       </section>
 
-      <footer className="footer">© 2026 Northstar Entertainment Group · I See — sample prototype</footer>
+      <footer className="footer">© 2026 Round1 Entertainment Group · I See — sample prototype</footer>
     </main>
   );
 }
@@ -919,6 +921,7 @@ export default function App() {
       {page === 'landing' && <Landing setPage={setPage} />}
       {page === 'dashboard' && <Dashboard />}
       {page === 'customer' && <Customer />}
+      {page === 'appdemo' && <AppDemo />}
     </div>
   );
 }
