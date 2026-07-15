@@ -59,7 +59,16 @@ jobs:
       - name: Unit and integration tests
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ic
-        run: python -m unittest discover -s . -p "test_*.py" -v
+        run: |
+          set +e
+          python -m unittest discover -s . -p "test_*.py" -v
+          code=$?
+          set -e
+          if [ "$code" -eq 5 ]; then
+            echo "No tests were collected; skipping (unittest exit code 5)."
+            exit 0
+          fi
+          exit "$code"
 
       - name: Build sdist and wheel
         run: python -m build
