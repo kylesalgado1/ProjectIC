@@ -1,58 +1,365 @@
-INSERT INTO company (id, name) VALUES
-    (1, 'Acme Play'),
-    (2, 'Rival Fun');
+-- seed.sql
 
-INSERT INTO location (id, company_id, name, city) VALUES
-    (10, 1, 'Downtown', 'Portland'),
-    (11, 1, 'Uptown', 'Seattle'),
-    (12, 1, 'Airport', 'Denver'),
-    (13, 1, 'San Francisco', 'San Francisco'),
-    (20, 2, 'Riverside', 'Austin');
-
-INSERT INTO size_tier (id, company_id, name, min_guests, max_guests) VALUES
-    (100, 1, 'Small', 1, 8),
-    (101, 1, 'Large', 9, 30),
-    (200, 2, 'Standard', 1, 20);
-
-INSERT INTO package
-    (id, company_id, name, description, base_price_cents, size_tier_id, active)
+INSERT INTO company (
+    id,
+    name
+)
 VALUES
-    (1000, 1, 'Bronze', 'Bronze party package', 15000, 100, true),
-    (1001, 1, 'Gold', 'Gold party package', 30000, 101, true),
-    (1002, 1, 'Legacy', 'Retired package', 9000, 100, false),
-    (1003, 1, 'Ultimate Combo', 'Ultimate party combo', 45000, 101, true),
-    (2000, 2, 'Rival Basic', 'Competitor package', 5000, 200, true);
+(
+    'northstar',
+    'Northstar Entertainment Group'
+);
 
-INSERT INTO package_override
-    (id, company_id, location_id, package_id, price_cents, available)
+INSERT INTO location (
+    id,
+    company_id,
+    name,
+    city,
+    region
+)
 VALUES
-    (5000, 1, 10, 1000, 12000, true),
-    (5001, 1, 10, 1001, NULL, false),
-    (5002, 1, 13, 1003, NULL, false);
+(
+    'sf',
+    'northstar',
+    'Round1 Stonestown Galleria',
+    'San Francisco',
+    'CA'
+),
+(
+    'roseville',
+    'northstar',
+    'Round1 Roseville Galleria',
+    'Roseville',
+    'CA'
+),
+(
+    'concord',
+    'northstar',
+    'Round1 Sunvalley Mall',
+    'Concord',
+    'CA'
+);
 
-INSERT INTO promo
-    (id, company_id, code, description, discount_percent, starts_on, ends_on, active)
+INSERT INTO party_package (
+    id,
+    company_id,
+    location_id,
+    name,
+    description,
+    min_guests,
+    weekday_2hr_price_cents,
+    weekday_3hr_price_cents,
+    weekend_2hr_price_cents,
+    weekend_3hr_price_cents,
+    active,
+    popular
+)
 VALUES
-    (3000, 1, 'SAVE10', 'Ten percent off', 10, DATE '2026-01-01', DATE '2026-12-31',
-     true),
-    (3001, 1, 'SUMMER', 'Summer discount', 20, DATE '2026-06-01', DATE '2026-08-31',
-     true),
-    (3002, 1, 'OLDIE', 'Expired promo', 50, DATE '2020-01-01', DATE '2020-02-01',
-     true),
-    (4000, 2, 'RIVAL', 'Competitor promo', 5, DATE '2026-01-01', DATE '2026-12-31',
-     true);
+(
+    'sf-pkg0',
+    'northstar',
+    'sf',
+    'All Inclusive Party',
+    'Maximize fun and minimize cost! Experience the most of what we have to offer. We have plenty of options for everyone!',
+    10,
+    4064,
+    4564,
+    4964,
+    5464,
+    true,
+    true
+),
+(
+    'sf-pkg1',
+    'northstar',
+    'sf',
+    'Bowling Party',
+    'Strike up the fun! Spend a couple hours on the lanes and get in some good old friendly competition to see who can come out on top!',
+    6,
+    2799,
+    3099,
+    3199,
+    3599,
+    true,
+    false
+),
+(
+    'sf-pkg2',
+    'northstar',
+    'sf',
+    'Arcade Party',
+    'Get your game on! Try your luck on our various claw machines or play your heart out on racing, dancing, PCB games, and more. You can win it all!',
+    6,
+    2799,
+    3199,
+    3099,
+    3499,
+    true,
+    false
+),
+(
+    'roseville-pkg0',
+    'northstar',
+    'roseville',
+    'All Inclusive Party',
+    'Maximize fun and minimize cost! Experience the most of what we have to offer. We have plenty of options for everyone!',
+    10,
+    4064,
+    4564,
+    4964,
+    5464,
+    true,
+    true
+),
+(
+    'roseville-pkg1',
+    'northstar',
+    'roseville',
+    'Bowling Party',
+    'Strike up the fun! Spend a couple hours on the lanes and get in some good old friendly competition to see who can come out on top!',
+    6,
+    2799,
+    3099,
+    3199,
+    3599,
+    true,
+    false
+),
+(
+    'roseville-pkg2',
+    'northstar',
+    'roseville',
+    'Arcade Party',
+    'Get your game on! Try your luck on our various claw machines or play your heart out on racing, dancing, PCB games, and more. You can win it all!',
+    6,
+    2799,
+    3199,
+    3099,
+    3499,
+    true,
+    false
+),
+(
+    'concord-pkg0',
+    'northstar',
+    'concord',
+    'All Inclusive Party',
+    'Maximize fun and minimize cost! Experience the most of what we have to offer. We have plenty of options for everyone!',
+    10,
+    4064,
+    4564,
+    4964,
+    5464,
+    true,
+    true
+),
+(
+    'concord-pkg1',
+    'northstar',
+    'concord',
+    'Bowling Party',
+    'Strike up the fun! Spend a couple hours on the lanes and get in some good old friendly competition to see who can come out on top!',
+    6,
+    2799,
+    3099,
+    3199,
+    3599,
+    true,
+    false
+),
+(
+    'concord-pkg2',
+    'northstar',
+    'concord',
+    'Arcade Party',
+    'Get your game on! Try your luck on our various claw machines or play your heart out on racing, dancing, PCB games, and more. You can win it all!',
+    6,
+    2799,
+    3199,
+    3099,
+    3499,
+    true,
+    false
+);
 
-INSERT INTO promo_override
-    (id, company_id, location_id, promo_id, discount_percent, active)
+INSERT INTO promo (
+    id,
+    company_id,
+    location_id,
+    name,
+    description,
+    starts_on,
+    ends_on,
+    active
+)
 VALUES
-    (6000, 1, 10, 3000, 15, true),
-    (6001, 1, 10, 3001, NULL, false);
+(
+    'sf-mymelody',
+    'northstar',
+    'sf',
+    'My Melody Takeover',
+    'Limited My Melody prize machines, photo spot & plush claw prizes.',
+    '2026-06-01',
+    '2026-08-31',
+    true
+),
+(
+    'sf-miku',
+    'northstar',
+    'sf',
+    'Hatsune Miku Rhythm Fest',
+    'Exclusive Project DIVA rhythm cabinets & tour merch.',
+    '2026-07-01',
+    '2026-09-30',
+    true
+),
+(
+    'sf-cinnamoroll',
+    'northstar',
+    'sf',
+    'Cinnamoroll Winter Cafe',
+    'Cinnamoroll claw machines, café treats & winter prizes.',
+    '2026-11-15',
+    '2026-12-31',
+    false
+),
+(
+    'roseville-mymelody',
+    'northstar',
+    'roseville',
+    'My Melody Takeover',
+    'Limited My Melody prize machines, photo spot & plush claw prizes.',
+    '2026-06-01',
+    '2026-08-31',
+    true
+),
+(
+    'roseville-miku',
+    'northstar',
+    'roseville',
+    'Hatsune Miku Rhythm Fest',
+    'Exclusive Project DIVA rhythm cabinets & tour merch.',
+    '2026-07-01',
+    '2026-09-30',
+    false
+),
+(
+    'concord-mymelody',
+    'northstar',
+    'concord',
+    'My Melody Takeover',
+    'Limited My Melody prize machines, photo spot & plush claw prizes.',
+    '2026-06-01',
+    '2026-08-31',
+    true
+),
+(
+    'concord-cinnamoroll',
+    'northstar',
+    'concord',
+    'Cinnamoroll Winter Cafe',
+    'Cinnamoroll claw machines, café treats & winter prizes.',
+    '2026-11-15',
+    '2026-12-31',
+    true
+);
 
-INSERT INTO resource
-    (id, company_id, location_id, name, capacity, size_tier_id)
+INSERT INTO room (
+    id,
+    company_id,
+    location_id,
+    name,
+    capacity,
+    quantity,
+    working
+)
 VALUES
-    (7000, 1, 10, 'Room A', 8, 100),
-    (7001, 1, 10, 'Room B', 20, 101),
-    (7002, 1, 11, 'Room C', 12, 101),
-    (7003, 1, 13, 'Bay Room', 24, 101),
-    (8000, 2, 20, 'Rival Room', 10, 200);
+(
+    'sf-large',
+    'northstar',
+    'sf',
+    'Extra Large Room 1',
+    40,
+    2,
+    true
+),
+(
+    'sf-party',
+    'northstar',
+    'sf',
+    'Extra Large Room 2',
+    40,
+    3,
+    true
+),
+(
+    'sf-vip',
+    'northstar',
+    'sf',
+    'Large Room',
+    30,
+    1,
+    false
+),
+(
+    'roseville-large',
+    'northstar',
+    'roseville',
+    'Large Room',
+    50,
+    2,
+    true
+),
+(
+    'roseville-lane',
+    'northstar',
+    'roseville',
+    'Lane Suite',
+    12,
+    4,
+    true
+),
+(
+    'concord-large',
+    'northstar',
+    'concord',
+    'Large Room',
+    35,
+    1,
+    true
+),
+(
+    'concord-party',
+    'northstar',
+    'concord',
+    'Party Room',
+    14,
+    2,
+    true
+);
+
+INSERT INTO room_reservation (
+    id,
+    company_id,
+    location_id,
+    room_id,
+    starts_at,
+    ends_at
+)
+VALUES
+(
+    'sf-large-r1',
+    'northstar',
+    'sf',
+    'sf-large',
+    '2026-07-18 15:00:00',
+    '2026-07-18 17:00:00'
+),
+(
+    'sf-large-r2',
+    'northstar',
+    'sf',
+    'sf-large',
+    '2026-07-18 18:00:00',
+    '2026-07-18 20:00:00'
+);
