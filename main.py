@@ -156,19 +156,8 @@ def ask(
     )
     if context is None:
         raise HTTPException(status_code=404, detail="Location not found")
-    answerer = assistant_answerer.get_default_answerer()
-    try:
-        answer = answerer.answer(question, context)
-    except Exception as error:
-        raise HTTPException(
-            status_code=500, detail="Assistant failed to answer the question"
-        ) from error
-    try:
-        repository.log_question(location_id, payload.question, answer)
-    except Exception as error:
-        raise HTTPException(
-            status_code=500, detail="Failed to record the question"
-        ) from error
+    answer = assistant_answerer.answer_question(question, context)
+    repository.log_question(location_id, payload.question, answer)
     return AskResponse(answer=answer)
 
 

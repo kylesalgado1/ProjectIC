@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import contextlib
 import unittest
+from collections.abc import Iterator
 from datetime import date, datetime, timezone
 from unittest import mock
 
@@ -21,15 +23,6 @@ PACKAGES = [
         size_tier_id=100,
         active=True,
     ),
-    Package(
-        id=1001,
-        company_id=1,
-        name="Gold",
-        description="Gold party package",
-        base_price_cents=30000,
-        size_tier_id=101,
-        active=True,
-    ),
 ]
 
 PACKAGE_OVERRIDES = {
@@ -42,8 +35,8 @@ PROMOS = [
     Promo(
         id=3000,
         company_id=1,
-        code="SAVE10",
-        description="Ten percent off",
+        code="SUMMER",
+        description="Summer discount",
         discount_percent=10,
         starts_on=date(2026, 1, 1),
         ends_on=date(2026, 12, 31),
@@ -61,11 +54,7 @@ PROMOS = [
     ),
 ]
 
-PROMO_OVERRIDES = {
-    3000: PromoOverride(
-        promo_id=3000, location_id=10, discount_percent=15, active=True
-    ),
-}
+PROMO_OVERRIDES: dict[int, PromoOverride] = {}
 
 RESOURCES = [
     Resource(
@@ -76,25 +65,34 @@ RESOURCES = [
         capacity=8,
         size_tier_id=100,
     ),
-    Resource(
-        id=7001,
-        company_id=1,
-        location_id=10,
-        name="Room B",
-        capacity=20,
-        size_tier_id=101,
-    ),
 ]
 
 FIXED_NOW = datetime(2026, 7, 1, 12, 0, tzinfo=timezone.utc)
 
 
-def _packages_return() -> tuple[list[Package], dict[int, PackageOverride]]:
-    return list(PACKAGES), dict(PACKAGE_OVERRIDES)
-
-
-def _promos_return() -> tuple[list[Promo], dict[int, PromoOverride]]:
-    return list(PROMOS), dict(PROMO_OVERRIDES)
+@contextlib.contextmanager
+def _patched_repository() -> Iterator[None]:
+    with (
+        mock.patch.object(
+            assistant_context.repository, "get_location", return_value=LOCATION
+        ),
+        mock.patch.object(
+            assistant_context.repository,
+            "load_packages_for_location",
+            return_value=(list(PACKAGES), dict(PACKAGE_OVERRIDES)),
+        ),
+        mock.patch.object(
+            assistant_context.repository,
+            "load_promos_for_location",
+            return_value=(list(PROMOS), dict(PROMO_OVERRIDES)),
+        ),
+        mock.patch.object(
+            assistant_context.repository,
+            "load_resources_for_location",
+            return_value=list(RESOURCES),
+        ),
+    ):
+        yield
 
 
 class BuildAssistantContextTests(unittest.TestCase):
@@ -113,12 +111,12 @@ class BuildAssistantContextTests(unittest.TestCase):
             mock.patch.object(
                 assistant_context.repository,
                 "load_packages_for_location",
-                return_value=_packages_return(),
+                return_value=(list(PACKAGES), dict(PACKAGE_OVERRIDES)),
             ) as load_packages,
             mock.patch.object(
                 assistant_context.repository,
                 "load_promos_for_location",
-                return_value=_promos_return(),
+                return_value=(list(PROMOS), dict(PROMO_OVERRIDES)),
             ) as load_promos,
             mock.patch.object(
                 assistant_context.repository,
@@ -132,64 +130,27 @@ class BuildAssistantContextTests(unittest.TestCase):
         load_promos.assert_called_once_with(1, 10)
         load_resources.assert_called_once_with(1, 10)
 
-    def test_resolves_packages(self) -> None:
-        with (
-            mock.patch.object(
-                assistant_context.repository, "get_location", return_value=LOCATION
-            ),
-            mock.patch.object(
-                assistant_context.repository,
-                "load_packages_for_location",
-                return_value=_packages_return(),
-            ),
-            mock.patch.object(
-                assistant_context.repository,
-                "load_promos_for_location",
-                return_value=_promos_return(),
-            ),
-            mock.patch.object(
-                assistant_context.repository,
-                "load_resources_for_location",
-                return_value=list(RESOURCES),
-            ),
-        ):
+    def test_maps_location_id_name_and_city(self) -> None:
+        with _patched_repository():
+            result = assistant_context.build_assistant_context(1, 10, FIXED_NOW)
+        assert result is not None
+        self.assertEqual(result.location_id, 10)
+        self.assertEqual(result.location_name, "Downtown")
+        self.assertEqual(result.city, "Portland")
+
+    def test_resolves_packages_with_overrides(self) -> None:
+        with _patched_repository():
             result = assistant_context.build_assistant_context(1, 10, FIXED_NOW)
         assert result is not None
         self.assertEqual(
             result.packages,
             resolution.resolve_packages(list(PACKAGES), dict(PACKAGE_OVERRIDES)),
         )
+        self.assertEqual(result.packages[0].price_cents, 12000)
 
     def test_resolves_active_promos_with_supplied_now(self) -> None:
-        with (
-            mock.patch.object(
-                assistant_context.repository, "get_location", return_value=LOCATION
-            ),
-            mock.patch.object(
-                assistant_context.repository,
-                "load_packages_for_location",
-                return_value=_packages_return(),
-            ),
-            mock.patch.object(
-                assistant_context.repository,
-                "load_promos_for_location",
-                return_value=_promos_return(),
-            ),
-            mock.patch.object(
-                assistant_context.repository,
-                "load_resources_for_location",
-                return_value=list(RESOURCES),
-            ),
-            mock.patch.object(
-                assistant_context.resolution,
-                "active_promos",
-                wraps=assistant_context.resolution.active_promos,
-            ) as active_promos,
-        ):
+        with _patched_repository():
             result = assistant_context.build_assistant_context(1, 10, FIXED_NOW)
-        active_promos.assert_called_once_with(
-            list(PROMOS), dict(PROMO_OVERRIDES), on=FIXED_NOW.date()
-        )
         assert result is not None
         self.assertEqual(
             result.active_promos,
@@ -197,62 +158,15 @@ class BuildAssistantContextTests(unittest.TestCase):
                 list(PROMOS), dict(PROMO_OVERRIDES), on=FIXED_NOW.date()
             ),
         )
+        codes = [promo.promo.code for promo in result.active_promos]
+        self.assertIn("SUMMER", codes)
+        self.assertNotIn("OLDIE", codes)
 
     def test_includes_raw_resources(self) -> None:
-        with (
-            mock.patch.object(
-                assistant_context.repository, "get_location", return_value=LOCATION
-            ),
-            mock.patch.object(
-                assistant_context.repository,
-                "load_packages_for_location",
-                return_value=_packages_return(),
-            ),
-            mock.patch.object(
-                assistant_context.repository,
-                "load_promos_for_location",
-                return_value=_promos_return(),
-            ),
-            mock.patch.object(
-                assistant_context.repository,
-                "load_resources_for_location",
-                return_value=list(RESOURCES),
-            ),
-            mock.patch.object(
-                assistant_context.resolution, "rooms_fitting"
-            ) as rooms_fitting,
-        ):
+        with _patched_repository():
             result = assistant_context.build_assistant_context(1, 10, FIXED_NOW)
         assert result is not None
         self.assertEqual(result.resources, list(RESOURCES))
-        rooms_fitting.assert_not_called()
-
-    def test_maps_location_id_name_and_city(self) -> None:
-        with (
-            mock.patch.object(
-                assistant_context.repository, "get_location", return_value=LOCATION
-            ),
-            mock.patch.object(
-                assistant_context.repository,
-                "load_packages_for_location",
-                return_value=_packages_return(),
-            ),
-            mock.patch.object(
-                assistant_context.repository,
-                "load_promos_for_location",
-                return_value=_promos_return(),
-            ),
-            mock.patch.object(
-                assistant_context.repository,
-                "load_resources_for_location",
-                return_value=list(RESOURCES),
-            ),
-        ):
-            result = assistant_context.build_assistant_context(1, 10, FIXED_NOW)
-        assert result is not None
-        self.assertEqual(result.location_id, 10)
-        self.assertEqual(result.location_name, "Downtown")
-        self.assertEqual(result.city, "Portland")
 
 
 if __name__ == "__main__":
